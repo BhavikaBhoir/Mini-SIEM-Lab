@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Summary Stats -->
+<div class="stat-grid" style="margin-bottom:24px;">
+  <div class="stat-card critical">
+    <span class="stat-icon">🔴</span>
+    <div class="stat-value">{{ severity_stats.Critical }}</div>
+    <div class="stat-label">Critical Threats</div>
+  </div>
+  <div class="stat-card high">
+    <span class="stat-icon">🟠</span>
+    <div class="stat-value">{{ severity_stats.High }}</div>
+    <div class="stat-label">High Threats</div>
+  </div>
+  <div class="stat-card medium">
+    <span class="stat-icon">🟡</span>
+    <div class="stat-value">{{ severity_stats.Medium }}</div>
+    <div class="stat-label">Medium Threats</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">✅</span>
+    <div class="stat-value" style="color:var(--low);">{{ status_stats.Resolved }}</div>
+    <div class="stat-label">Resolved</div>
+  </div>
+</div>
+
+<!-- Download & Charts Row -->
+<div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px;align-items:flex-start;">
+
+  <!-- Download Card -->
+  <div class="panel" style="flex:0 0 260px;text-align:center;">
+    <div style="font-size:44px;margin-bottom:12px;">📄</div>
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:6px;">PDF Security Report</h3>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:18px;">
+      Full report with severity breakdown,<br>threat table, and analyst summary
+    </p>
+    <a href="{{ url_for('download_report') }}" class="btn btn-primary" style="width:100%;justify-content:center;">
+      ⬇️ Download PDF
+    </a>
+  </div>
+
+  <!-- Status Chart -->
+  <div class="chart-panel" style="flex:1;min-width:240px;">
+    <div class="chart-title">🔵 Alert Status Overview</div>
+    <canvas id="statusChart" height="180"></canvas>
+  </div>
+
+</div>
+
+<!-- Full Threat Table -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">
+      <div class="title-icon">📊</div>
+      Complete Threat Report
+    </div>
+    <span style="font-size:12px;color:var(--text-muted);">{{ reports|length }} total records</span>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Threat Type</th>
+          <th>Severity</th>
+          <th>Source IP</th>
+          <th>Status</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td class="ts-mono">{{ r.id }}</td>
+          <td>{{ r.threat_type }}</td>
+          <td>
+            <span class="badge badge-{{ r.severity.lower() }}">
+              {% if r.severity == 'Critical' %}🔴
+              {% elif r.severity == 'High' %}🟠
+              {% elif r.severity == 'Medium' %}🟡
+              {% else %}🟢{% endif %}
+              {{ r.severity }}
+            </span>
+          </td>
+          <td><span class="ip-mono">{{ r.source_ip }}</span></td>
+          <td><span class="badge badge-{{ r.status.lower() }}">{{ r.status }}</span></td>
+          <td class="ts-mono">{{ r.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">
+            No threat records found. Run the log generator to populate data.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+new Chart(statusCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Open', 'Acknowledged', 'Resolved'],
+    datasets: [{
+      label: 'Count',
+      data: [
+        {{ status_stats.Open }},
+        {{ status_stats.Acknowledged }},
+        {{ status_stats.Resolved }}
+      ],
+      backgroundColor: ['#6366f1','#0ea5e9','#22c55e'],
+      borderRadius: 8,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+      y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+    }
+  }
+});
+</script>
+{% endblock %}

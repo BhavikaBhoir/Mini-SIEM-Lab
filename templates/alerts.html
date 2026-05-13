@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Active Alerts{% endblock %}
+
+{% block content %}
+
+<div class="alert-banner">
+  <span class="banner-icon">🚨</span>
+  <div class="banner-text">
+    <h3>{{ alerts | length }} Active High/Critical Alert{% if alerts|length != 1 %}s{% endif %}</h3>
+    <p>Showing only Open alerts with Critical or High severity — requires immediate SOC attention</p>
+  </div>
+</div>
+
+{% if alerts %}
+<div id="alertsList">
+  {% for alert in alerts %}
+  <div
+    class="alert-card {{ 'critical-card' if alert.severity == 'Critical' else 'high-card' }}"
+    id="alert-{{ alert.id }}"
+  >
+    <span class="alert-icon">
+      {{ '🔴' if alert.severity == 'Critical' else '🟠' }}
+    </span>
+    <div class="alert-body">
+      <div class="alert-type">{{ alert.threat_type }}</div>
+      <div class="alert-meta">
+        <span>
+          <span class="badge badge-{{ alert.severity.lower() }}">{{ alert.severity }}</span>
+        </span>
+        <span>🌐 <span class="ip-mono">{{ alert.source_ip }}</span></span>
+        <span>🕐 {{ alert.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+        {% if alert.description %}
+        <span style="color:var(--text-secondary);">📝 {{ alert.description }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="alert-actions">
+      <button
+        class="btn btn-ghost btn-sm"
+        onclick="acknowledgeAlert({{ alert.id }})"
+        title="Acknowledge"
+      >👁️ Acknowledge</button>
+      <button
+        class="btn btn-success btn-sm"
+        onclick="resolveAlert({{ alert.id }})"
+        title="Resolve"
+      >✅ Resolve</button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="panel" style="text-align:center;padding:60px 24px;">
+  <div style="font-size:48px;margin-bottom:16px;">✅</div>
+  <h2 style="color:var(--low);margin-bottom:8px;">All Clear</h2>
+  <p style="color:var(--text-muted);">No active high/critical alerts at this time.</p>
+</div>
+{% endif %}
+
+<div class="panel" style="margin-top:20px;">
+  <div class="panel-header">
+    <div class="panel-title"><div class="title-icon">📌</div>Alert Response Guide</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;">
+    <div style="padding:16px;background:var(--bg-card2);border-radius:var(--radius);border:1px solid var(--border);">
+      <div style="font-size:20px;margin-bottom:8px;">👁️</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Acknowledge</div>
+      <div style="font-size:12px;color:var(--text-muted);">Alert seen by analyst — investigation in progress</div>
+    </div>
+    <div style="padding:16px;background:var(--bg-card2);border-radius:var(--radius);border:1px solid var(--border);">
+      <div style="font-size:20px;margin-bottom:8px;">✅</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Resolve</div>
+      <div style="font-size:12px;color:var(--text-muted);">Threat handled — incident closed in SIEM</div>
+    </div>
+    <div style="padding:16px;background:var(--bg-card2);border-radius:var(--radius);border:1px solid var(--border);">
+      <div style="font-size:20px;margin-bottom:8px;">🔴</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">Critical SLA</div>
+      <div style="font-size:12px;color:var(--text-muted);">Must be acknowledged within 15 minutes of detection</div>
+    </div>
+    <div style="padding:16px;background:var(--bg-card2);border-radius:var(--radius);border:1px solid var(--border);">
+      <div style="font-size:20px;margin-bottom:8px;">🟠</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:4px;">High SLA</div>
+      <div style="font-size:12px;color:var(--text-muted);">Must be investigated within 1 hour of detection</div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function acknowledgeAlert(id) {
+  const r = await fetch('/alerts/acknowledge/' + id, { method: 'POST' });
+  const d = await r.json();
+  if (d.success) {
+    const el = document.getElementById('alert-' + id);
+    el.style.transition = 'opacity 0.4s';
+    el.style.opacity = '0.4';
+    setTimeout(() => el.remove(), 400);
+  }
+}
+
+async function resolveAlert(id) {
+  const r = await fetch('/alerts/resolve/' + id, { method: 'POST' });
+  const d = await r.json();
+  if (d.success) {
+    const el = document.getElementById('alert-' + id);
+    el.style.transition = 'opacity 0.4s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 400);
+  }
+}
+
+// Refresh every 20s
+setTimeout(() => location.reload(), 20000);
+</script>
+{% endblock %}

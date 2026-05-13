@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ page_title or 'Mini SIEM' }}{% endblock %} — Mini SIEM</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="app-body">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">🛡️</div>
+    <div class="brand-text">
+      <h2>Mini SIEM</h2>
+      <span>SOC Platform</span>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Navigation</div>
+  <nav>
+    <ul>
+      <li>
+        <a href="{{ url_for('dashboard') }}"
+           class="{{ 'active' if request.endpoint == 'dashboard' }}">
+          <span class="nav-icon">📊</span> Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('logs') }}"
+           class="{{ 'active' if request.endpoint == 'logs' }}">
+          <span class="nav-icon">📋</span> Threat Logs
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('alerts') }}"
+           class="{{ 'active' if request.endpoint == 'alerts' }}">
+          <span class="nav-icon">🚨</span> Alerts
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('reports') }}"
+           class="{{ 'active' if request.endpoint == 'reports' }}">
+          <span class="nav-icon">📈</span> Reports
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('settings') }}"
+           class="{{ 'active' if request.endpoint == 'settings' }}">
+          <span class="nav-icon">⚙️</span> Settings
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="user-avatar">{{ session.get('username', 'A')[0].upper() }}</div>
+      <div class="user-details">
+        <div class="user-name">{{ session.get('username', 'admin') }}</div>
+        <div class="user-role">{{ session.get('role', 'Admin') }}</div>
+      </div>
+    </div>
+    <a href="{{ url_for('logout') }}" class="logout-link">
+      <span>🔓</span> Logout
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>{% block page_heading %}{{ page_title }}{% endblock %}</h1>
+      <div class="breadcrumb">Mini SIEM / <span>{{ page_title }}</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="live-badge"><div class="live-dot"></div>Live Monitor</div>
+      <div class="topbar-time" id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-messages">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">
+            <span>
+              {% if category == 'success' %}✅
+              {% elif category == 'warning' %}⚠️
+              {% elif category == 'danger' %}❌
+              {% else %}ℹ️{% endif %}
+            </span>
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<script>
+  // Live clock
+  function updateClock() {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('en-GB');
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Mobile hamburger
+  const hamburger = document.getElementById('hamburger');
+  const sidebar   = document.getElementById('sidebar');
+  if (hamburger) hamburger.addEventListener('click', () => sidebar.classList.toggle('open'));
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

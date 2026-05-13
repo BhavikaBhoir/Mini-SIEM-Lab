@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+
+<div class="settings-grid">
+
+  <!-- System Status -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="title-icon">💻</div>System Status</div>
+    </div>
+    <div class="status-row">
+      <span class="status-label">🔄 Real-time Monitoring</span>
+      <span class="status-on">● ENABLED</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">🗄️ Database Logging</span>
+      <span class="status-on">● ENABLED</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">🔍 Threat Detection Engine</span>
+      <span class="status-on">● ACTIVE</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">📄 PDF Reporting</span>
+      <span class="status-on">● ENABLED</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">🔐 Session Protection</span>
+      <span class="status-on">● ENABLED</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">👤 Logged-in User</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);">
+        {{ session.get('username') }} ({{ session.get('role') }})
+      </span>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title"><div class="title-icon">⚡</div>Quick Actions</div>
+    </div>
+
+    <form method="POST" action="{{ url_for('settings') }}" style="margin-bottom:12px;">
+      <input type="hidden" name="action" value="generate_logs">
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-bottom:10px;">
+        ⚡ Generate 20 Sample Log Lines
+      </button>
+    </form>
+
+    <a href="{{ url_for('download_report') }}" class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:10px;">
+      📄 Download Latest PDF Report
+    </a>
+
+    <a href="{{ url_for('logs') }}" class="btn btn-ghost" style="width:100%;justify-content:center;">
+      📋 View All Threat Logs
+    </a>
+  </div>
+
+</div>
+
+<!-- Threat Signatures -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title"><div class="title-icon">🔎</div>Active Detection Signatures</div>
+    <span class="badge badge-open">{{ threat_signatures|length }} rules</span>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="sig-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Threat Type</th>
+          <th>Severity</th>
+          <th>Description</th>
+          <th>Pattern (preview)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sig in threat_signatures %}
+        <tr>
+          <td class="ts-mono">{{ loop.index }}</td>
+          <td><strong>{{ sig.type }}</strong></td>
+          <td><span class="badge badge-{{ sig.severity.lower() }}">{{ sig.severity }}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ sig.description }}</td>
+          <td>
+            <code style="font-size:11px;color:var(--accent);background:var(--accent-dim);
+                         padding:2px 7px;border-radius:4px;display:inline-block;max-width:200px;
+                         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              {{ sig.pattern[:40] }}{% if sig.pattern|length > 40 %}…{% endif %}
+            </code>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Audit Log -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title"><div class="title-icon">📜</div>Audit Log (Last 30 Actions)</div>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr><th>Time</th><th>User</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for log in audit_logs %}
+        <tr>
+          <td class="ts-mono">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td><span class="ip-mono">{{ log.user }}</span></td>
+          <td style="font-size:12px;color:var(--text-secondary);">{{ log.action }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="3" style="text-align:center;padding:30px;color:var(--text-muted);">
+            No audit entries yet.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Danger Zone -->
+<div class="panel danger-zone">
+  <div class="panel-header">
+    <div class="panel-title">⚠️ Danger Zone</div>
+  </div>
+  <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">
+    The following actions are irreversible. Proceed with caution.
+  </p>
+  <form method="POST" action="{{ url_for('settings') }}"
+        onsubmit="return confirm('⚠️ Are you sure? This will delete ALL threat records permanently.')">
+    <input type="hidden" name="action" value="clear_db">
+    <button type="submit" class="btn btn-danger">
+      🗑️ Clear Entire Threat Database
+    </button>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add enumerate filter polyfill for Jinja2 (handled server-side below)
+</script>
+{% endblock %}

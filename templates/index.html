@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<!-- Alert Banner -->
+<div class="alert-banner">
+  <span class="banner-icon">⚡</span>
+  <div class="banner-text">
+    <h3>Threat Detection Engine Active</h3>
+    <p>Real-time monitoring of security logs — auto-refreshes every 15 seconds</p>
+  </div>
+  {% if new_threats > 0 %}
+  <span class="badge badge-critical">+{{ new_threats }} new</span>
+  {% endif %}
+</div>
+
+<!-- Stat Cards -->
+<div class="stat-grid" id="statsGrid">
+  <div class="stat-card">
+    <span class="stat-icon">📦</span>
+    <div class="stat-value" id="statTotal">{{ total_logs }}</div>
+    <div class="stat-label">Total Threats Logged</div>
+  </div>
+  <div class="stat-card critical">
+    <span class="stat-icon">🔴</span>
+    <div class="stat-value" id="statCritical">{{ critical_alerts }}</div>
+    <div class="stat-label">Critical Severity</div>
+  </div>
+  <div class="stat-card high">
+    <span class="stat-icon">🟠</span>
+    <div class="stat-value" id="statHigh">{{ high_alerts }}</div>
+    <div class="stat-label">High Severity</div>
+  </div>
+  <div class="stat-card medium">
+    <span class="stat-icon">🟡</span>
+    <div class="stat-value" id="statMedium">{{ medium_alerts }}</div>
+    <div class="stat-label">Medium Severity</div>
+  </div>
+  <div class="stat-card open">
+    <span class="stat-icon">🔓</span>
+    <div class="stat-value" id="statOpen">{{ open_alerts }}</div>
+    <div class="stat-label">Open Alerts</div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="charts-grid">
+  <div class="chart-panel">
+    <div class="chart-title">📊 Threat Distribution</div>
+    <canvas id="barChart" height="220"></canvas>
+  </div>
+  <div class="chart-panel">
+    <div class="chart-title">🥧 Severity Breakdown</div>
+    <canvas id="doughnutChart" height="220"></canvas>
+  </div>
+</div>
+
+<!-- Recent Threats Table -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">
+      <div class="title-icon">🕐</div>
+      Recent Threat Activity
+    </div>
+    <a href="{{ url_for('logs') }}" class="btn btn-ghost btn-sm">View All →</a>
+  </div>
+
+  <div class="table-wrapper">
+    <table id="recentTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Threat Type</th>
+          <th>Severity</th>
+          <th>Source IP</th>
+          <th>Status</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="recentBody">
+        {% for log in recent_logs %}
+        <tr>
+          <td class="ts-mono">{{ log.id }}</td>
+          <td>{{ log.threat_type }}</td>
+          <td>
+            <span class="badge badge-{{ log.severity.lower() }}">
+              {% if log.severity == 'Critical' %}🔴
+              {% elif log.severity == 'High' %}🟠
+              {% elif log.severity == 'Medium' %}🟡
+              {% else %}🟢{% endif %}
+              {{ log.severity }}
+            </span>
+          </td>
+          <td><span class="ip-mono">{{ log.source_ip }}</span></td>
+          <td><span class="badge badge-{{ log.status.lower() }}">{{ log.status }}</span></td>
+          <td class="ts-mono">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const CHART_DEFAULTS = {
+  color: 'rgba(241,245,249,0.8)',
+  grid:  'rgba(30,41,59,0.8)',
+};
+
+// ---- Bar Chart ----
+const threatData = {{ threat_counts | tojson }};
+const barLabels  = Object.keys(threatData);
+const barValues  = Object.values(threatData);
+
+const barColors  = [
+  '#ef4444','#f97316','#eab308','#22c55e',
+  '#0ea5e9','#6366f1','#ec4899','#14b8a6',
+];
+
+const barCtx = document.getElementById('barChart').getContext('2d');
+const barChart = new Chart(barCtx, {
+  type: 'bar',
+  data: {
+    labels:   barLabels,
+    datasets: [{
+      label:           'Detections',
+      data:            barValues,
+      backgroundColor: barColors.slice(0, barLabels.length),
+      borderRadius:    8,
+      borderSkipped:   false,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: CHART_DEFAULTS.color, font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: CHART_DEFAULTS.color, font: { size: 11 } },
+           grid:  { color: CHART_DEFAULTS.grid } },
+      y: { ticks: { color: CHART_DEFAULTS.color, font: { size: 11 } },
+           grid:  { color: CHART_DEFAULTS.grid } },
+    }
+  }
+});
+
+// ---- Doughnut Chart ----
+const sevLabels = ['Critical', 'High', 'Medium', 'Low'];
+const sevValues = [
+  {{ critical_alerts }},
+  {{ high_alerts }},
+  {{ medium_alerts }},
+  {{ total_logs - critical_alerts - high_alerts - medium_alerts }}
+];
+
+const doughCtx = document.getElementById('doughnutChart').getContext('2d');
+new Chart(doughCtx, {
+  type: 'doughnut',
+  data: {
+    labels:   sevLabels,
+    datasets: [{
+      data:            sevValues,
+      backgroundColor: ['#ef4444','#f97316','#eab308','#22c55e'],
+      borderColor:     '#0f172a',
+      borderWidth:     3,
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '68%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { color: CHART_DEFAULTS.color, padding: 16, font: { size: 11 } }
+      }
+    }
+  }
+});
+
+// ---- Live Refresh via API ----
+async function refreshStats() {
+  try {
+    const r = await fetch('/api/stats');
+    const d = await r.json();
+    document.getElementById('statTotal').textContent    = d.total;
+    document.getElementById('statCritical').textContent = d.critical;
+    document.getElementById('statHigh').textContent     = d.high;
+    document.getElementById('statMedium').textContent   = d.medium;
+    document.getElementById('statOpen').textContent     = d.open;
+  } catch(e) {}
+}
+
+async function refreshTable() {
+  try {
+    const r = await fetch('/api/recent_threats');
+    const threats = await r.json();
+    const sevClass = { Critical:'badge-critical', High:'badge-high',
+                       Medium:'badge-medium', Low:'badge-low' };
+    const sevIcon  = { Critical:'🔴', High:'🟠', Medium:'🟡', Low:'🟢' };
+    const tbody = document.getElementById('recentBody');
+    tbody.innerHTML = threats.map(t => `
+      <tr>
+        <td class="ts-mono">${t.id}</td>
+        <td>${t.threat_type}</td>
+        <td><span class="badge ${sevClass[t.severity]||'badge-low'}">${sevIcon[t.severity]||'⚪'} ${t.severity}</span></td>
+        <td><span class="ip-mono">${t.source_ip}</span></td>
+        <td><span class="badge badge-${t.status.toLowerCase()}">${t.status}</span></td>
+        <td class="ts-mono">${t.timestamp}</td>
+      </tr>`).join('');
+  } catch(e) {}
+}
+
+setInterval(() => { refreshStats(); refreshTable(); }, 15000);
+</script>
+{% endblock %}

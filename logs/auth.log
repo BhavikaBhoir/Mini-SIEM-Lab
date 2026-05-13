@@ -1,0 +1,20 @@
+[2026-05-13 21:04:28] Unauthorized admin access attempt from 45.67.22.11
+[2026-05-13 21:04:31] UNION SELECT injection attempt from 10.0.0.254
+[2026-05-13 21:04:34] Pass-the-hash attack detected from 203.0.113.77
+[2026-05-13 21:04:37] Pass-the-hash attack detected from 91.23.44.55
+[2026-05-13 21:04:40] Port scanning activity detected from 10.0.0.254
+[2026-05-13 21:04:43] Pass-the-hash attack detected from 11.45.222.90
+[2026-05-13 21:04:46] Pass-the-hash attack detected from 10.0.0.254
+[2026-05-13 21:04:49] XSS payload found in form submission from 192.168.1.10
+[2026-05-13 21:04:52] Failed login attempt from 45.67.22.11
+[2026-05-13 21:04:55] Malware signature matched — source 172.16.0.15
+[2026-05-13 21:04:58] Port scanning activity detected from 66.240.236.119
+[2026-05-13 21:05:01] SQL Injection payload detected in request from 198.51.100.42
+[2026-05-13 21:05:04] Failed login attempt from 11.45.222.90
+[2026-05-13 21:05:07] User login successful from 192.168.1.10
+[2026-05-13 21:05:10] authentication failure for user root from 11.45.222.90
+[2026-05-13 21:05:13] Phishing URL accessed from 172.16.0.15
+[2026-05-13 21:05:16] User login successful from 37.120.131.201
+[2026-05-13 21:05:19] Failed login attempt from 172.16.0.15
+[2026-05-13 21:05:22] Failed login attempt from 91.23.44.55
+[2026-05-13 21:05:25] C2 beacon communication detected to 45.67.22.11

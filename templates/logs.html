@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Threat Logs{% endblock %}
+
+{% block content %}
+
+<!-- Search & Filter Bar -->
+<form method="GET" action="{{ url_for('logs') }}">
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        name="search"
+        placeholder="Search by threat type or IP address..."
+        value="{{ search }}"
+      >
+    </div>
+    <select name="severity" style="width:160px;">
+      <option value="">All Severities</option>
+      {% for s in ['Critical','High','Medium','Low'] %}
+      <option value="{{ s }}" {{ 'selected' if severity == s }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary">
+      🔎 Filter
+    </button>
+    <a href="{{ url_for('logs') }}" class="btn btn-ghost">Reset</a>
+    <button
+      type="button"
+      class="btn btn-danger"
+      onclick="clearAll()"
+      style="margin-left:auto;"
+    >
+      🗑️ Clear All
+    </button>
+  </div>
+</form>
+
+<!-- Table Panel -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">
+      <div class="title-icon">📋</div>
+      Threat Log Entries
+      <span class="badge badge-open" style="margin-left:6px;">
+        {{ pagination.total }} records
+      </span>
+    </div>
+    <a href="{{ url_for('download_report') }}" class="btn btn-primary btn-sm">
+      ⬇️ Export PDF
+    </a>
+  </div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Threat Type</th>
+          <th>Severity</th>
+          <th>Source IP</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th>Timestamp</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr id="row-{{ log.id }}">
+          <td class="ts-mono">{{ log.id }}</td>
+          <td><strong>{{ log.threat_type }}</strong></td>
+          <td>
+            <span class="badge badge-{{ log.severity.lower() }}">
+              {% if log.severity == 'Critical' %}🔴
+              {% elif log.severity == 'High' %}🟠
+              {% elif log.severity == 'Medium' %}🟡
+              {% else %}🟢{% endif %}
+              {{ log.severity }}
+            </span>
+          </td>
+          <td><span class="ip-mono">{{ log.source_ip }}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);max-width:220px;">
+            {{ log.description or '—' }}
+          </td>
+          <td>
+            <span class="badge badge-{{ log.status.lower() }}">{{ log.status }}</span>
+          </td>
+          <td class="ts-mono">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td>
+            <button
+              class="btn btn-danger btn-sm"
+              onclick="deleteRow({{ log.id }})"
+            >🗑️</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;color:var(--text-muted);padding:40px;">
+            No threat logs found matching your filters.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+  <div class="pagination" style="margin-top:20px;">
+    {% if pagination.has_prev %}
+    <a href="{{ url_for('logs', page=pagination.prev_num, severity=severity, search=search) }}"
+       class="page-btn">‹ Prev</a>
+    {% endif %}
+
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+      <a href="{{ url_for('logs', page=p, severity=severity, search=search) }}"
+         class="page-btn {{ 'active' if p == pagination.page }}">{{ p }}</a>
+      {% else %}
+      <span class="page-btn" style="opacity:0.4">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {% if pagination.has_next %}
+    <a href="{{ url_for('logs', page=pagination.next_num, severity=severity, search=search) }}"
+       class="page-btn">Next ›</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function deleteRow(id) {
+  if (!confirm('Delete threat #' + id + '?')) return;
+  const r = await fetch('/threats/delete/' + id, { method: 'POST' });
+  const d = await r.json();
+  if (d.success) {
+    const row = document.getElementById('row-' + id);
+    row.style.transition = 'opacity 0.3s';
+    row.style.opacity    = '0';
+    setTimeout(() => row.remove(), 300);
+  }
+}
+
+async function clearAll() {
+  if (!confirm('Delete ALL threat records? This cannot be undone.')) return;
+  const r = await fetch('/threats/clear_all', { method: 'POST' });
+  const d = await r.json();
+  if (d.success) location.reload();
+}
+
+// Auto-refresh every 20 seconds
+setTimeout(() => location.reload(), 20000);
+</script>
+{% endblock %}
