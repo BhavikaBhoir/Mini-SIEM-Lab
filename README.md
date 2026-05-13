@@ -190,8 +190,7 @@ python generator.py
 
 ## 👩‍💻 Author
 
-**Bhavika Bhoir**
-**Samyak Jadhav**
+**Bhavika Bhoir And Samyak Jadhav**
 
 ---
 
