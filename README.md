@@ -9,12 +9,6 @@ A professional **Security Information and Event Management (SIEM)** system built
 
 ---
 
-## 📸 Screenshots
-
-> Dashboard | Threat Logs | Alerts | Reports | Settings
-
----
-
 ## ✨ Features
 
 ### 🔍 Threat Detection
